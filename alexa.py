@@ -1,8 +1,5 @@
-#! /usr/bin/env python3
-# this line is temporary ^
-# build response
-import random
-import time
+#import random
+#import time
 
 VERSION = '1.0'
 
@@ -40,6 +37,20 @@ def gen_queue_pop():
     pop_time = random.randint(1,5)
     time.sleep(pop_time)
     
+def start_countdown():
+    #gen_queue_pop()
+    session_attributes = {}
+    reprompt = None
+    speech_output = "Queue popped"
+    end_session = False
+    return build_response(
+            session_attributes,
+            'welcome',
+            speech_output,
+            reprompt,
+            end_session)
+    
+    
 def queue_accept(intent, session):
     session_attributes = {}
     reprompt = None
@@ -53,13 +64,12 @@ def queue_accept(intent, session):
             reprompt,
             end_session)
 
-
 # EVENTS
 def event_new_session(request, session):
     pass
 
 def event_launch(request, session):
-    pass
+    return queue_accept(intent, session)
 
 def event_intent(request, session):
     if request['intent']['name'] == 'CheckQueueIntent':
@@ -83,7 +93,6 @@ def event_end_session(request, session):
 # HANDLER
 def main_handler(event, context):
     if event['session']['new']:
-        #new session
         pass
 
     if event['request']['type'] == 'LaunchRequest':
