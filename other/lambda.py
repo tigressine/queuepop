@@ -1,7 +1,19 @@
-#import random
-#import time
+import socket
 
 VERSION = '1.0'
+responses = {
+    'positive': ['accept',
+                 'accept queue',
+                 'yes',
+                 'ye',
+                 'go',
+                 'lets go'],
+    'negative': ['decline',
+                 'decline queue',
+                 'no',
+                 'nah fam',
+                 'cancel']
+}
 
 def build_response(
         session_attributes,
@@ -33,68 +45,87 @@ def build_response(
         }
 
 #FUNCTIONS: THIS WHERE THE CASH IS BOIS
-def gen_queue_pop():
-    pop_time = random.randint(1,5)
-    time.sleep(pop_time)
+def send_message(message):
+    TCP_IP = '54.227.77.179'
+    TCP_PORT = 4711
     
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((TCP_IP, TCP_PORT))
+    sock.send(message.encode())
+    sock.close()
+
+def get_help():
+    session_attributes = {}
+    reprompt = None
+    speech_output = "Please give a valid response"
+    end_session = False
+    
+    return build_response(
+            session_attributes,
+            'QueuePop',
+            speech_output,
+            reprompt,
+            end_session)
+            
 def start_countdown():
-    #gen_queue_pop()
     session_attributes = {}
     reprompt = None
     speech_output = "Queue popped"
     end_session = False
+    
     return build_response(
             session_attributes,
-            'welcome',
+            'QueuePop',
             speech_output,
             reprompt,
             end_session)
     
-    
-def queue_accept(intent, session):
+def queue_accept():
     session_attributes = {}
     reprompt = None
     speech_output = "Accepting queue..."
     end_session = True
-
+    send_message('accept')
     return build_response(
             session_attributes,
-            intent['name'],
+            'QueuePop',
+            speech_output,
+            reprompt,
+            end_session)
+
+def queue_decline():
+    session_attributes = {}
+    reprompt = None
+    speech_output = "Declining queue..."
+    end_session = True
+    send_message('decline')
+    return build_response(
+            session_attributes,
+            'QueuePop',
             speech_output,
             reprompt,
             end_session)
 
 # EVENTS
-def event_new_session(request, session):
-    pass
-
 def event_launch(request, session):
-    return queue_accept(intent, session)
+    return start_countdown()
 
 def event_intent(request, session):
-    if request['intent']['name'] == 'CheckQueueIntent':
-        return funct_to_check()
-    elif request['intent']['name'] == 'AcceptQueueIntent':
-        return queue_accept(intent, session)
-    elif request['intent']['name'] == 'DeclineQueueIntent':
-        return funct_to_decline()
+    if request['intent']['name'] == 'QueueIntent':
+        #return queue_accept()
+        if request['intent']['slots']['Response']['value'] in responses['positive']:
+            return queue_accept()
+        elif request['intent']['slots']['Response']['value'] in responses['negative']:
+            return queue_decline()
+        else:
+            return get_help()
     elif request['intent']['name'] == 'AMAZON.HelpIntent':
-        return funct_to_help()
-    elif (request['intent']['name'] == 'AMAZON.CancelIntent' or
-          request['intent']['name'] == 'AMAZON.StopIntent'):
-        return funct_to_cancel()
+        return get_help()
     else:
         raise ValueError("Invalid intent")
 
-def event_end_session(request, session):
-    pass
-
-
 # HANDLER
 def main_handler(event, context):
-    if event['session']['new']:
-        pass
-
     if event['request']['type'] == 'LaunchRequest':
         return event_launch(event['request'], event['session'])
     elif event['request']['type'] == 'IntentRequest':
